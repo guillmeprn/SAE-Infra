@@ -1,0 +1,85 @@
+#!/bin/bash
+
+clear
+
+. "/usr/local/bin/shared/shared_ips"
+. "/usr/local/bin/shared/shared_write_functions"
+# utilisateur des VMs
+readonly vm_user="root"
+
+# effectue un ping d'une machine à une autre et renvoie le résultat
+# $1: IP machine source ; $2: IP machine destination
+function ping_hosts() {
+	echo "[$1 → $2]"
+	result=$(timeout 1 ssh "$vm_user"@"$1" '( ping -4qc1 '$2' 2>&1 )')
+	if [ "$?" != "0" ]
+        then
+        tput setaf 1
+        else
+	tput setaf 2
+        fi
+	result=$(echo "$result" | awk -F'/' 'END{ print (/^rtt/? "OK ["$5" ms]":"ECHEC") }')
+        echo "$result"
+        tput sgr0
+}
+
+# ping la machine principale pour une IP donnée
+# $1: IP machine source
+function ping_main() {
+	bold_title "[VM PRINCIPALE]"
+	ping_hosts "$1" "$vm_main_ip"
+}
+
+# ping toutes les machines de la DMZ pour une IP donnée
+# $1: IP machine source
+function ping_all_dmz() {
+        bold_title "[DMZ]"
+	for (( j=0; j<"${#all_ips_dmz[@]}"; j=$((j+2)) ))
+	do
+		ping_hosts "$1" "${all_ips_dmz[$((j+1))]}"
+	done
+}
+
+# ping toutes les machines du réseau interne pour une IP donnée
+# $1: IP machine source
+function ping_all_internal() {
+	bold_title "[RESEAU INTERNE]"
+	for (( k=0; k<"${#all_ips_internal[@]}"; k=$((k+2)) ))
+	do
+		ping_hosts "$1" "${all_ips_internal[$((k+1))]}"
+	done
+}
+
+color_title "TEST DES VLANs" "5"
+
+color_title "VM PRINCIPALE → TOUTES LES MACHINES" "6"
+
+echo
+bold_title "> VM PRINCIPALE"
+echo
+ping_all_dmz "$vm_main_ip"
+ping_all_internal "$vm_main_ip"
+
+color_title "DMZ → RESEAU INTERNE" "6"
+
+for (( i=0; i<"${#all_ips_dmz[@]}"; i=$((i+2)) ))
+do
+	echo
+	bold_title "> ${all_ips_dmz[$i]}"
+	echo
+	ping_main "${all_ips_dmz[$((i+1))]}"
+	ping_all_internal "${all_ips_dmz[$((i+1))]}"
+done
+
+color_title "RESEAU INTERNE → DMZ" "6"
+
+for (( i=0; i<"${#all_ips_internal[@]}"; i=$((i+2)) ))
+do
+	echo
+	bold_title "> ${all_ips_internal[$i]}"
+	echo
+	ping_main "${all_ips_internal[$((i+1))]}"
+	ping_all_dmz "${all_ips_internal[$((i+1))]}"
+done
+
+echo

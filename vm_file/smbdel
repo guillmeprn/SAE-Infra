@@ -1,0 +1,39 @@
+#!/bin/bash
+
+clear
+
+. "/usr/local/bin/shared/shared_write_functions"
+. "/usr/local/bin/shared/shared_debug_functions"
+existing_users=$(awk -F ':' '$3>1000 {print $1}' /etc/passwd)
+
+debug_show_users
+
+# vérifie si un utilisateur n\'existe pas (ne lit pas le user avec id=1000 pour ne pas pouvoir le supprimer)
+# pas de paramètres
+function del_user() {
+        echo
+	read -p "Nom de l'utilisateur à supprimer : " user
+        user_exists=$(sort <(echo "$user") <(echo "$existing_users") | uniq -d)
+
+        if [ -z "$user_exists" ]
+        then
+        echo "L'utilisateur $user n'existe pas !"
+        del_user
+        fi
+}
+
+color_title "SUPPRESSION D'UN UTILISATEUR SAMBA" "5"
+echo "$line"
+
+bold_title "> NOM UTILISATEUR"
+del_user
+
+smbpasswd -x "$user"
+userdel -r "$user"
+
+echo
+echo "L'utilisateur $user a bien été supprimé !"
+
+debug_show_users
+
+echo

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# IPs des VMs (modifier/ajouter les IPs ici en cas de changement(s)/nouvelle(s) machine(s))
+readonly vm_main_ip="192.168.14.221"
+readonly vm_web_ip="192.168.100.2"
+readonly vm_dns_ip="192.168.100.3"
+readonly vm_nagios_ip="192.168.100.134"
+readonly vm_file_ip="192.168.100.209"
+readonly vm_dhcp_ip="192.168.100.217"
+readonly vm_postgres_ip="192.168.100.250"
+# IPs des VMs (array)
+readonly all_ips=(
+	"VM PRINCIPALE" "$vm_main_ip" \
+	"VM WEB" "$vm_web_ip" \
+	"VM DNS" "$vm_dns_ip" \
+        "VM NAGIOS" "$vm_nagios_ip" \
+        "VM FICHIERS" "$vm_file_ip" \
+        "VM DHCP" "$vm_dhcp_ip" \
+        "VM POSTGRESQL" "$vm_postgres_ip"
+)
+readonly all_ips_dmz=(
+	"VM WEB" "$vm_web_ip" \
+	"VM DNS" "$vm_dns_ip"
+)
+readonly all_ips_internal=(
+	"VM NAGIOS" "$vm_nagios_ip" \
+	"VM FICHIERS" "$vm_file_ip" \
+	"VM DHCP" "$vm_dhcp_ip" \
+	"VM POSTGRESQL" "$vm_postgres_ip"
+)

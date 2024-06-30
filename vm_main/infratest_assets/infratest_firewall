@@ -1,0 +1,25 @@
+#!/bin/bash
+
+clear
+
+. "/usr/local/bin/shared/shared_ips"
+. "/usr/local/bin/shared/shared_write_functions"
+. "/usr/local/bin/shared/shared_test_functions"
+vm_user="root"
+
+color_title "TEST DES REGLES PARE-FEU" "6"
+
+color_title "ACCES AU SITE WEB DEPUIS L'IP PRINCIPALE" "5"
+echo
+result=$(ssh "$vm_user"@"$vm_dhcp_ip" '( curl '$vm_main_ip' )')
+print_result_code
+
+color_title "CONNEXION SSH INITIEE DEPUIS LA DMZ" "5"
+for (( i=0; i<"${#all_ips_dmz[@]}"; i=$((i+2)) ))
+do
+        echo
+        bold_title "[${all_ips_dmz[$i]} → $vm_main_ip]"
+        echo
+	result=$(timeout 1.5 ssh -J "${all_ips_dmz[$((i+1))]}" "$vm_user"@"$vm_main_ip")
+	print_result_code
+done

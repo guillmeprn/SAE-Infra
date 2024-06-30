@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# configuration du dialog
+readonly height=15
+readonly width=45
+readonly options_height=3
+readonly backtitle="Vous utilisez infratest"
+readonly title="Selecteur de tests de l'infrastructure"
+readonly menu="Choisir un test ci-dessous :"
+# chemin des scripts
+readonly scripts_path="/usr/local/bin/infratest_assets/"
+
+options=(
+	1 "TEST DE CONNECTIVITE INTERNET"
+	2 "TEST PARE-FEU"
+	3 "TEST VLANs"
+)
+
+dialog=$(
+	dialog --clear \
+	--backtitle "$backtitle" \
+	--title "$title" \
+	--menu "$menu" \
+	"$height" "$width" "$options_height" "${options[@]}" 2>&1 > /dev/tty
+)
+
+clear
+case "$dialog" in
+	1)
+		"$scripts_path"infratest_internet
+		;;
+	2)
+		"$scripts_path"infratest_firewall
+		;;
+	3)
+		"$scripts_path"infratest_vlans
+		;;
+esac

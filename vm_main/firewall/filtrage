@@ -1,0 +1,60 @@
+#!/usr/sbin/nft -f
+
+# PREROUTING
+# ---------------
+# Règles connexion pour le site web
+add rule nat prerouting ip daddr 192.168.14.221 iifname { enp0s1, virbr2 } tcp dport { http, https } dnat 192.168.100.2
+
+# FORWARD
+# ---------------
+# Les demandes de connexion venant d'internet n'ont que l'accès à la DMZ
+add rule filter FORWARD iifname enp0s1 oifname virbr2 tcp flags syn ct state new drop
+# HTTP/HTTPS
+add rule filter FORWARD oifname { virbr1, enp0s1 } tcp dport { http, https } tcp flags syn ct state new accept
+# DNS
+add rule filter FORWARD tcp dport 53 accept
+add rule filter FORWARD udp dport 53 accept
+# ICMP
+add rule filter FORWARD icmp type { echo-request, echo-reply, time-exceeded, destination-unreachable } iifname virbr2 accept
+add rule filter FORWARD icmp type { echo-reply, time-exceeded, destination-unreachable } oifname virbr2 accept
+#ports CSF pour traceroute
+add rule filter FORWARD udp dport 33434-33523 accept
+# UDP port 514 pour rsyslogd
+add rule filter FORWARD udp dport 514 ct state new accept
+#SQL
+#add rule filter FORWARD ip saddr 192.168.100.2-192.168.100.250 tcp dport 5432 accept
+# connexions établies acceptées
+add rule filter FORWARD ct state established accept
+# politique par défaut
+add rule filter FORWARD drop
+
+# INPUT
+# ---------------
+add rule filter INPUT ct state established accept
+add rule filter INPUT tcp dport { http, https } ct state new tcp flags syn accept
+add rule filter INPUT iifname { "virbr2", "enp0s1", "lo" } tcp dport ssh ct state new tcp flags syn accept
+add rule filter INPUT tcp dport 53 accept
+add rule filter INPUT udp dport 53 accept
+add rule filter INPUT tcp sport 53 accept
+add rule filter INPUT udp sport 53 accept
+add rule filter INPUT icmp type echo-request iifname { enp0s1, virbr2, lo } limit rate 5/second accept
+add rule filter INPUT icmp type { echo-request, echo-reply, time-exceeded, destination-unreachable } iifname { enp0s1, virbr2, lo } accept
+add rule filter INPUT tcp dport 514 ct state new accept
+
+# politique par défaut
+add rule filter INPUT drop
+
+# OUTPUT
+# ---------------
+# TODO
+add rule filter OUTPUT icmp type { echo-request, echo-reply, time-exceeded, destination-unreachable } accept
+add rule filter OUTPUT tcp dport 53 accept
+add rule filter OUTPUT udp dport 53 accept
+add rule filter OUTPUT tcp dport ssh accept
+add rule filter OUTPUT tcp dport 514 ct state new accept
+#ports CSF pour traceroute
+add rule filter OUTPUT udp dport 33434-33523 accept 
+
+add rule filter OUTPUT ct state established accept
+#politique par défaut
+add rule filter OUTPUT drop

@@ -1,0 +1,42 @@
+#!/bin/bash
+
+. "/usr/local/bin/shared/shared_ips"
+# configuration du dialog
+readonly height=15
+readonly width=45
+readonly options_height=6
+readonly title="Selecteur de connexion SSH"
+readonly menu="Choisir une machine parmi les suivantes :"
+# utilisateur des VMs
+if [ -z "$1" ]
+then
+readonly vm_user="root"
+else
+readonly vm_user="$1"
+fi
+# message d\'information du dialog en fonction de l\'utilisateur
+readonly backtitle="Vous utilisez ssh_selector avec l'utilisateur [$vm_user]"
+
+options=()
+actions=("case \"\$dialog\" in")
+
+# création dynamique des options en fonction des IPs disponibles
+for (( i=2, j=1; i<"${#all_ips[@]}"; i=$((i+2)), j++ ))
+do
+	options+=("$j" "${all_ips[$i]} (${all_ips[$((i+1))]})")
+	actions+=("$j"\) "ssh $vm_user"@"${all_ips[$((i+1))]}" ";;")
+done
+
+actions+=("esac")
+
+dialog=$(
+	dialog --clear \
+	--backtitle "$backtitle" \
+	--title "$title" \
+	--menu "$menu" \
+	"$height" "$width" "$options_height" "${options[@]}" 2>&1 > /dev/tty
+)
+
+clear
+
+. <(echo "${actions[@]}")

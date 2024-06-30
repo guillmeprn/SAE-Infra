@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# affiche le résultat d'un test en fonction du dernier code de retour
+# pas de paramètres
+function print_result_code() {
+        if [ "$?" -eq "0" ]
+        then
+        tput setaf 2
+	echo "TEST REUSSI"
+        else
+        tput setaf 1
+	echo "TEST ECHOUE"
+        fi
+        tput sgr0
+}

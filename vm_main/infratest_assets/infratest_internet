@@ -1,0 +1,83 @@
+#!/bin/bash
+
+clear
+
+. "/usr/local/bin/shared/shared_ips"
+. "/usr/local/bin/shared/shared_write_functions"
+# valeurs de test
+readonly test_ip="1.1.1.1"
+readonly test_url="www.google.com"
+readonly test_local_url="groupe3.fr"
+# utilisateur des VMs
+readonly vm_user="root"
+
+# affiche le résultat d'un test en fonction de la valeur du dernier résultat
+# pas de paramètres
+function print_result() {
+	if [ "$result" == "TEST ECHOUE" ]
+	then
+	tput setaf 1
+	else
+	tput setaf 2
+	fi
+	echo "$result"
+	tput sgr0
+}
+
+# effectue un test de ping pour une IP donnée
+# $1: IP source ; $2: IP destination
+function ssh_ping_test() {
+	echo
+	echo "> PING ($2)"
+	result=$(timeout 1 ssh "$vm_user"@"$1" '( ping -4qc1 '$2' 2>&1 )')
+	result=$(echo "$result" | awk -F'/' 'END{ print (/^rtt/? "TEST REUSSI ['$2' → "$5" ms]":"TEST ECHOUE") }')
+}
+
+# effectue un test de résolution DNS pour une IP donnée
+# $1: IP
+function ssh_dns_test() {
+	echo
+	echo "> RESOLUTION DNS ($test_url)"
+	result=$(ssh "$vm_user"@"$1" '( nslookup '$test_url' )')
+	result=$(echo "$result" | awk '/^Address: / { print $2 }' | xargs | cut -d ' ' -f 1)
+	[[ -z "$result" ]] && result="TEST ECHOUE" || result="TEST REUSSI [$test_url → $result]"
+}
+
+# effectue un test de traceroute pour une IP donnée
+# $1: IP
+function ssh_traceroute_test() {
+	echo
+	echo "> TRACEROUTE ($test_url)"
+	timeout 1 ssh "$vm_user"@"$1" '( traceroute -4n '$test_url' > /dev/null 2>&1 )'
+	[[ "$?" -eq 0 ]] && result="TEST REUSSI [traceroute → $test_url]" || result="TEST ECHOUE"
+}
+
+# effectue la totalité des tests pour une IP donnée
+# $1: IP
+function ssh_test_all() {
+	ssh_ping_test "$1" "$test_ip"
+	print_result
+
+	ssh_ping_test "$1" "$test_local_url"
+	print_result
+
+	ssh_dns_test "$1"
+	print_result
+
+	ssh_traceroute_test "$1"
+	print_result
+}
+
+# tests des différentes machines
+
+color_title "TEST ACCES INTERNET DE L'INFRASTRUCTURE" "5"
+
+for (( i=0; i<"${#all_ips[@]}"; i=$((i+2)) ))
+do
+
+color_title "${all_ips[$i]} (${all_ips[$((i+1))]})" "6"
+ssh_test_all "${all_ips[$((i+1))]}"
+
+done
+
+echo

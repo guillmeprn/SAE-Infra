@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$1" = "1" ]
+then
+DEBUG="$1"
+else
+DEBUG="0"
+fi
+
+function debug_show_users() {
+	if [ "$DEBUG" = "1" ]
+	then
+	pdbedit -Lv | grep "Unix"
+	fi
+}

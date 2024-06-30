@@ -1,0 +1,42 @@
+#!/bin/bash
+
+clear
+
+. "/usr/local/bin/shared/shared_ips"
+. "/usr/local/bin/shared/shared_write_functions"
+# utilisateur des VMs
+readonly vm_user="root"
+
+# vérifie et affiche les mises à jour logicielles pour une IP donnée
+# $1: IP
+function check_updates() {
+	bold_title "Mises à jour disponibles :"
+	updates=$(ssh "$vm_user"@"$1" '( apt update 2> /dev/null | tail -n 1 )')
+	if [ "$updates" != "All packages are up to date." ]
+	then
+	ssh "$vm_user"@"$1" '( apt list --upgradable 2> /dev/null | tail -n +2 )'
+	bold_title "Effectuer les mises à jour disponibles ? O/N"
+	read -p "Votre choix : " answer
+		if [ "$answer" = "o" ] || [ "$answer" = "O" ]
+		then
+		ssh "$vm_user"@"$1" '( apt upgrade -y 2> /dev/null )'
+		else
+		echo "Mises à jour annulées"
+		fi
+	else
+	echo "$updates"
+	fi
+}
+
+color_title "MISES A JOUR LOGICIELLES" "5"
+
+for (( i=0; i<"${#all_ips[@]}"; i=$((i+2)) ))
+do
+
+color_title "${all_ips[$i]} (${all_ips[$((i+1))]})" "6"
+echo
+check_updates "${all_ips[$((i+1))]}"
+
+done
+
+echo

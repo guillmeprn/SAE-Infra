@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# séparateur
+readonly line=$'\n---------------------------------------------\n'
+
+# affiche un titre avec un texte et une couleur
+# $1: texte ; $2: code couleur
+function color_title() {
+        echo "$line"
+        tput setaf "$2"
+        echo "$1"
+        tput sgr0
+}
+
+# affiche un texte en gras
+# $1: texte
+function bold_title() {
+        tput bold
+        echo "$1"
+        tput sgr0
+}
